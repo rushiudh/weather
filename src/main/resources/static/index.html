@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f7f6;
+            padding: 50px;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            display: inline-block;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Device Location Weather</h2>
+    <p>Click the button below to fetch live weather data based on your exact coordinates.</p>
+    <button onclick="getLiveWeather()">Get My Weather</button>
+    <div id="weather-display" class="result"></div>
+</div>
+
+<script>
+    function getLiveWeather() {
+        const display = document.getElementById('weather-display');
+        display.innerHTML = "Detecting device location...";
+
+        if (!navigator.geolocation) {
+            display.innerHTML = "Geolocation is not supported by your browser.";
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                display.innerHTML = `Location found (Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}). Fetching weather data...`;
+
+                fetch(`/api/weather?lat=${lat}&lon=${lon}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error("Backend service error");
+                        return response.text();
+                    })
+                    .then(data => {
+                        display.innerHTML = `<p style="color: green;">${data}</p>`;
+                    })
+                    .catch(error => {
+                        display.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                    });
+            },
+            (error) => {
+                display.innerHTML = `Error getting location: ${error.message}`;
+            }
+        );
+    }
+</script>
+
+</body>
+</html>
