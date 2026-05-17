@@ -17,6 +17,7 @@
             border-radius: 10px;
             display: inline-block;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            min-width: 300px;
         }
         button {
             background-color: #007bff;
@@ -26,14 +27,31 @@
             font-size: 16px;
             border-radius: 5px;
             cursor: pointer;
+            margin-bottom: 20px;
         }
         button:hover {
             background-color: #0056b3;
         }
-        .result {
-            margin-top: 20px;
+        .status {
             font-weight: bold;
+            color: #666;
+            margin-top: 10px;
+        }
+        .weather-info {
+            display: none;
+            margin-top: 20px;
+            text-align: left;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        .info-item {
+            margin: 8px 0;
+            font-size: 16px;
             color: #333;
+        }
+        .value {
+            font-weight: bold;
+            color: #007bff;
         }
     </style>
 </head>
@@ -41,18 +59,42 @@
 
 <div class="card">
     <h2>Device Location Weather</h2>
-    <p>Click the button below to fetch live weather data based on your exact coordinates.</p>
+    <p>Click below to fetch live data for your exact coordinates.</p>
     <button onclick="getLiveWeather()">Get My Weather</button>
-    <div id="weather-display" class="result"></div>
+
+    <div id="status-message" class="status"></div>
+
+    <div id="weather-details" class="weather-info">
+        <div class="info-item">Condition: <span id="w-condition" class="value">-</span></div>
+        <div class="info-item">Temperature: <span id="w-temp" class="value">-</span></div>
+        <div class="info-item">Wind Speed: <span id="w-wind" class="value">-</span></div>
+        <div class="info-item">Time Context: <span id="w-time" class="value">-</span></div>
+    </div>
 </div>
 
 <script>
+    function getWeatherCondition(code) {
+        switch (code) {
+            case 0: return "Clear Sky";
+            case 1: case 2: case 3: return "Mainly Clear / Partly Cloudy";
+            case 45: case 48: return "Foggy";
+            case 51: case 53: case 55: return "Drizzle";
+            case 61: case 63: case 65: return "Rainy";
+            case 71: case 73: case 75: return "Snowy";
+            case 95: case 96: case 99: return "Thunderstorm";
+            default: return "Unknown (" + code + ")";
+        }
+    }
+
     function getLiveWeather() {
-        const display = document.getElementById('weather-display');
-        display.innerHTML = "Detecting device location...";
+        const status = document.getElementById('status-message');
+        const details = document.getElementById('weather-details');
+
+        status.innerHTML = "Detecting device location...";
+        details.style.display = "none";
 
         if (!navigator.geolocation) {
-            display.innerHTML = "Geolocation is not supported by your browser.";
+            status.innerHTML = "Geolocation is not supported by your browser.";
             return;
         }
 
@@ -60,9 +102,9 @@
             (position) => {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
-                display.innerHTML = `Location found (Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}). Fetching weather data...`;
+                status.innerHTML = "Location found. Querying backend app...";
 
-                fetch('/weather', {
+                fetch('http://127.0.0.1:8081/weather', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -74,30 +116,26 @@
                 })
                 .then(response => {
                     if (!response.ok) throw new Error("Backend service error");
-                    return response.text();
+                    return response.json();
                 })
                 .then(data => {
-                    display.innerHTML = `<p style="color: green;">${data}</p>`;
+                    status.innerHTML = "Weather data updated successfully!";
+
+                    const weather = data.current_weather;
+
+                    document.getElementById('w-condition').innerText = getWeatherCondition(weather.weathercode);
+                    document.getElementById('w-temp').innerText = `${weather.temperature}°C`;
+                    document.getElementById('w-wind').innerText = `${weather.windspeed} km/h`;
+                    document.getElementById('w-time').innerText = weather.is_day === 1 ? "Daytime" : "Nighttime";
+
+                    details.style.display = "block";
                 })
                 .catch(error => {
-                    display.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                    status.innerHTML = `<span style="color: red;">Error: ${error.message}</span>`;
                 });
             },
             (error) => {
-                switch(error.code) {
-                    case error.PERMISSION_DENIED:
-                        display.innerHTML = "User denied the request for Geolocation or origin is insecure.";
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        display.innerHTML = "Location information is unavailable. Check system location settings.";
-                        break;
-                    case error.TIMEOUT:
-                        display.innerHTML = "The request to get user location timed out.";
-                        break;
-                    case error.UNKNOWN_ERROR:
-                        display.innerHTML = "An unknown error occurred.";
-                        break;
-                }
+                status.innerHTML = `Location unavailable: ${error.message}`;
             },
             {
                 enableHighAccuracy: false,
