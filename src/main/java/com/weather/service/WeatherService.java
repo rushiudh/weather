@@ -5,6 +5,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 public class WeatherService {
+
     private final RestTemplate restTemplate;
 
     public WeatherService(RestTemplate restTemplate) {
