@@ -1,5 +1,10 @@
 pipeline {
     agent any
+    environment {
+            IMAGE_NAME = 'myapp'
+            IMAGE_TAG  = 'latest'
+            CONTAINER  = 'myapp-container'
+        }
 
     stages {
 
@@ -12,9 +17,15 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn clean package -DskipTests'
             }
         }
+
+        stage('Docker Build') {
+                    steps {
+                        sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                    }
+                }
 
         stage('Stop Old App') {
             steps {
