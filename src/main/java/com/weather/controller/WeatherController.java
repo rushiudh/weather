@@ -17,6 +17,6 @@ public class WeatherController {
 
     @GetMapping("/weather")
     public String getWeather(@RequestBody Coordinates coordinates) {
-        return weatherService.getWeather(coordinates.getLatitude(), coordinates.getLongitude());
+        return weatherService.getWeather(coordinates.latitude(), coordinates.longitude());
     }
 }
