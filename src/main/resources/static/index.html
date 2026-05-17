@@ -62,17 +62,26 @@
                 const lon = position.coords.longitude;
                 display.innerHTML = `Location found (Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}). Fetching weather data...`;
 
-                fetch(`/api/weather?lat=${lat}&lon=${lon}`)
-                    .then(response => {
-                        if (!response.ok) throw new Error("Backend service error");
-                        return response.text();
+                fetch('/weather', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        latitude: lat,
+                        longitude: lon
                     })
-                    .then(data => {
-                        display.innerHTML = `<p style="color: green;">${data}</p>`;
-                    })
-                    .catch(error => {
-                        display.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-                    });
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error("Backend service error");
+                    return response.text();
+                })
+                .then(data => {
+                    display.innerHTML = `<p style="color: green;">${data}</p>`;
+                })
+                .catch(error => {
+                    display.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                });
             },
             (error) => {
                 switch(error.code) {
