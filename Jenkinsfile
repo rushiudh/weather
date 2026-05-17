@@ -1,6 +1,12 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = 'weather-app'
+        IMAGE_TAG  = 'latest'
+        CONTAINER  = 'weather-app-container'
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -16,15 +22,10 @@ pipeline {
 
         stage('Docker Build & Deploy') {
             steps {
-                script {
-                    def appImage = docker.build("myapp:latest", ".")
-
-                    docker.withServer('unix:///var/run/docker.sock') {
-                        sh "docker stop myapp-container || true"
-                        sh "docker rm myapp-container || true"
-                        appImage.run("-d --name myapp-container -p 8080:8080")
-                    }
-                }
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                sh "docker stop ${CONTAINER} || true"
+                sh "docker rm ${CONTAINER} || true"
+                sh "docker run -d --name ${CONTAINER} -p 8080:8080 ${IMAGE_NAME}:${IMAGE_TAG}"
             }
         }
     }
