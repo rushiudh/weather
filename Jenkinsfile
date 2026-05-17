@@ -1,45 +1,30 @@
 pipeline {
     agent any
-    environment {
-            IMAGE_NAME = 'myapp'
-            IMAGE_TAG  = 'latest'
-            CONTAINER  = 'myapp-container'
-        }
 
     stages {
-
-        stage('Clone') {
+        stage('Checkout') {
             steps {
-                git branch: 'develop',
-                url: 'https://github.com/rushiudh/weather'
+                checkout scm
             }
         }
 
-        stage('Build') {
+        stage('Build Artifact') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
         }
 
-        stage('Docker Build') {
-                    steps {
-                        sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+        stage('Docker Build & Deploy') {
+            steps {
+                script {
+                    def appImage = docker.build("myapp:latest", ".")
+
+                    docker.withServer('unix:///var/run/docker.sock') {
+                        sh "docker stop myapp-container || true"
+                        sh "docker rm myapp-container || true"
+                        appImage.run("-d --name myapp-container -p 8080:8080")
                     }
                 }
-
-        stage('Stop Old App') {
-            steps {
-                sh '''
-                lsof -ti:8081 | xargs kill -9 || true
-                '''
-            }
-        }
-
-        stage('Run App') {
-            steps {
-                sh '''
-                nohup java -jar target/*.jar > app.log 2>&1 &
-                '''
             }
         }
     }
