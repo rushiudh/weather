@@ -19,7 +19,7 @@ pipeline {
         stage('Stop Old App') {
             steps {
                 sh '''
-                pkill -f 'java -jar' || true
+                lsof -ti:8081 | xargs kill -9 || true
                 '''
             }
         }
